@@ -5,9 +5,19 @@ public abstract class SelectionTool : EditorTool
 {
 	public Vector3 Pivot { get; set; }
 
+	public virtual Vector3 CalculateSelectionOrigin()
+	{
+		return default;
+	}
+
 	public virtual Rotation CalculateSelectionBasis()
 	{
 		return Rotation.Identity;
+	}
+
+	public virtual BBox CalculateSelectionBounds()
+	{
+		return default;
 	}
 
 	public virtual BBox CalculateLocalBounds()
@@ -37,6 +47,11 @@ public abstract class SelectionTool : EditorTool
 
 	public virtual void Scale( Vector3 origin, Rotation basis, Vector3 scale )
 	{
+	}
+
+	public virtual void Resize( Vector3 origin, Rotation basis, Vector3 scale )
+	{
+		Scale( origin, basis, scale );
 	}
 }
 
@@ -332,14 +347,14 @@ public abstract class SelectionTool<T>( MeshTool tool ) : SelectionTool where T 
 		_nudge = true;
 	}
 
-	public BBox CalculateSelectionBounds()
+	public override BBox CalculateSelectionBounds()
 	{
 		return BBox.FromPoints( _vertexSelection
 			.Where( x => x.IsValid() )
 			.Select( x => x.Transform.PointToWorld( x.Component.Mesh.GetVertexPosition( x.Handle ) ) ) );
 	}
 
-	public virtual Vector3 CalculateSelectionOrigin()
+	public override Vector3 CalculateSelectionOrigin()
 	{
 		var bounds = CalculateSelectionBounds();
 		return bounds.Center;

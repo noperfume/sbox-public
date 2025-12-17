@@ -165,6 +165,14 @@ public sealed partial class PolygonMesh : IJsonConvert
 		}
 	}
 
+	/// <summary>
+	/// Set transform without computing texture parameters from coordinates.
+	/// </summary>
+	public void SetTransform( Transform transform )
+	{
+		_transform = transform;
+	}
+
 	public PolygonMesh()
 	{
 		Positions = Topology.CreateVertexData<Vector3>( nameof( Positions ) );
@@ -2567,6 +2575,12 @@ public sealed partial class PolygonMesh : IJsonConvert
 	public void ComputeFaceTextureCoordinatesFromParameters()
 	{
 		ComputeFaceTextureCoordinatesFromParameters( FaceHandles );
+	}
+
+	public void ComputeFaceTextureCoordinatesFromParameters( Transform transform )
+	{
+		var textureSizes = Materials.Select( CalculateTextureSize ).ToArray();
+		ComputeFaceTextureCoordinatesFromParameters( FaceHandles, transform, textureSizes, 0.25f );
 	}
 
 	public void ComputeFaceTextureCoordinatesFromParameters( IEnumerable<FaceHandle> faces )
