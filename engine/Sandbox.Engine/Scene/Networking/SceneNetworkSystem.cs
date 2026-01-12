@@ -1281,6 +1281,7 @@ struct SceneRpcMsg
 	public Guid Guid { get; set; }
 	public int MethodIdentity { get; set; }
 	public object[] Arguments { get; set; }
+	public int[] GenericArguments { get; set; }
 }
 
 [Expose]
@@ -1290,6 +1291,7 @@ struct ObjectRpcMsg
 	public Guid ComponentId { get; set; }
 	public int MethodIdentity { get; set; }
 	public object[] Arguments { get; set; }
+	public int[] GenericArguments { get; set; }
 }
 
 [Expose]
@@ -1297,4 +1299,5 @@ struct StaticRpcMsg
 {
 	public int MethodIdentity { get; set; }
 	public object[] Arguments { get; set; }
+	public int[] GenericArguments { get; set; }
 }

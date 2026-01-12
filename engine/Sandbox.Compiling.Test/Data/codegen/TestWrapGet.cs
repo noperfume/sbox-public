@@ -45,4 +45,27 @@ public partial class TestWrapGet
 	{
 		return p.Value;
 	}
+	
+	[WrapGet]
+	public bool FieldKeywordProperty
+	{
+		set
+		{
+			field = value;
+		}
+		get
+		{
+			return field;
+		}
+	}
+	
+	[WrapGet]
+	public bool FieldKeywordPropertyAuto
+	{
+		set
+		{
+			field = value;
+		}
+		get;
+	}
 }
