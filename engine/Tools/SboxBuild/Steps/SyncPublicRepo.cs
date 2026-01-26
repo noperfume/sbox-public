@@ -611,27 +611,14 @@ internal class SyncPublicRepo( string name, bool dryRun = false ) : Step( name )
 		Log.Info( $"Processing {uniqueUploads.Count} {artifactLabel} artifacts (up to {maxParallelUploads} concurrent)..." );
 
 		var failedUploads = new ConcurrentBag<string>();
-		long actualUploadedBytes = 0;
-		int skippedCount = 0;
-		int uploadedCount = 0;
 
 		Parallel.ForEach( uniqueUploads, new ParallelOptions { MaxDegreeOfParallelism = maxParallelUploads }, item =>
 		{
 			var (absolutePath, artifact) = item;
-			var (success, wasSkipped) = UploadArtifactFile( absolutePath, artifact, remoteBase );
-			if ( !success )
+			if ( !UploadArtifactFile( absolutePath, artifact, remoteBase ) )
 			{
 				Log.Error( $"Failed to upload {artifactLabel} artifact: {artifact.Path}" );
 				failedUploads.Add( artifact.Path );
-			}
-			else if ( wasSkipped )
-			{
-				Interlocked.Increment( ref skippedCount );
-			}
-			else
-			{
-				Interlocked.Add( ref actualUploadedBytes, artifact.Size );
-				Interlocked.Increment( ref uploadedCount );
 			}
 		} );
 
@@ -641,28 +628,15 @@ internal class SyncPublicRepo( string name, bool dryRun = false ) : Step( name )
 			return false;
 		}
 
-		Log.Info( $"Uploaded {uploadedCount} {artifactLabel} artifacts ({Utility.FormatSize( actualUploadedBytes )}), {skippedCount} already existed" );
+		Log.Info( $"Uploaded {uniqueUploads.Count} {artifactLabel} artifacts ({Utility.FormatSize( batchBytes )})" );
 
 		return true;
 	}
 
-	private static (bool Success, bool WasSkipped) UploadArtifactFile( string localPath, ArtifactFileInfo artifact, string remoteBase )
+	private static bool UploadArtifactFile( string localPath, ArtifactFileInfo artifact, string remoteBase )
 	{
 		var remotePath = $"{remoteBase}/artifacts/{artifact.Sha256}";
-
-		// Check if the object already exists on remote using lsf
-		var existsOnRemote = false;
-		Utility.RunProcess( "rclone", $"lsf \"{remotePath}\" -q", timeoutMs: 60000,
-			onDataReceived: ( _, e ) => { if ( e.Data?.Contains( artifact.Sha256 ) == true ) existsOnRemote = true; } );
-
-		if ( existsOnRemote )
-		{
-			return (true, true);
-		}
-
-		// Use --no-check-dest since we already verified the file doesn't exist
-		var success = Utility.RunProcess( "rclone", $"copyto \"{localPath}\" \"{remotePath}\" --no-check-dest -q", timeoutMs: 600000 );
-		return (success, false);
+		return Utility.RunProcess( "rclone", $"copyto \"{localPath}\" \"{remotePath}\" --ignore-existing -q", timeoutMs: 600000 );
 	}
 
 	private static bool UploadManifest( string commitHash, IEnumerable<ArtifactFileInfo> artifacts, string remoteBase )
