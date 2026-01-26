@@ -93,12 +93,19 @@ internal class SyncPublicRepo( string name, bool dryRun = false ) : Step( name )
 	{
 		{ "public/.gitignore", ".gitignore" },
 		{ "public/.gitattributes", ".gitattributes" },
+		{ "public/.github/PULL_REQUEST_TEMPLATE.md", ".github/PULL_REQUEST_TEMPLATE.md" },
+		{ "public/.github/ISSUE_TEMPLATE/bug_report.yml", ".github/ISSUE_TEMPLATE/bug_report.yml" },
+		{ "public/.github/ISSUE_TEMPLATE/config.yml", ".github/ISSUE_TEMPLATE/config.yml" },
+		{ "public/.github/ISSUE_TEMPLATE/crash.yml", ".github/ISSUE_TEMPLATE/crash.yml" },
+		{ "public/.github/ISSUE_TEMPLATE/feature_request.yml", ".github/ISSUE_TEMPLATE/feature_request.yml" },
+		{ "public/.github/ISSUE_TEMPLATE/whitelist.yml", ".github/ISSUE_TEMPLATE/whitelist.yml" },
 		{ "public/.github/workflows/pull_request.yml", ".github/workflows/pull_request.yml" },
 		{ "public/.github/workflows/pull_request_checks.yml", ".github/workflows/pull_request_checks.yml" },
 		{ "public/.github/workflows/pull_request_formatting.yml", ".github/workflows/pull_request_formatting.yml" },
 		{ "public/README.md", "README.md" },
 		{ "public/LICENSE.md", "LICENSE.md" },
 		{ "public/CONTRIBUTING.md", "CONTRIBUTING.md" },
+		{ "public/SECURITY.md", "SECURITY.md" },
 		{ "public/Bootstrap.bat", "Bootstrap.bat" }
 	};
 
