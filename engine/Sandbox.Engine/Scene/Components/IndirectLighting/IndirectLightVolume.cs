@@ -75,20 +75,12 @@ public sealed partial class IndirectLightVolume : Component, Component.ExecuteIn
 	public float NormalBias { get; set; } = 5.0f;
 
 	/// <summary>
-	/// Controls the lobe width of the cosine re-weighting when generating distance moments.
-	/// Large exponents collapse variance and produce harsh shadows but seals leaks. Keep this modest.
-	/// </summary>
-	[Property, Range( 1.0f, 10.0f ), MakeDirty]
-	[Group( "Advanced Settings" )]
-	public float DepthSharpness { get; set; } = 2.0f;
-
-	/// <summary>
 	/// Controls how much less energy to conserve during probe integration.
 	/// Higher values give a harsher, more contrasty look.
 	/// </summary>
 	[Property, Range( 1.0f, 2.0f ), MakeDirty]
 	[Group( "Advanced Settings" )]
-	public float Contrast { get; set; } = 2.0f;
+	public float Contrast { get; set; } = 1.0f;
 
 	/// <summary>
 	/// Calculated probe count along each axis based on bounds and density.
@@ -191,7 +183,7 @@ public sealed partial class IndirectLightVolume : Component, Component.ExecuteIn
 			Graphics.FlushGPU();
 
 			IrradianceTexture = SaveTexture( updater.GeneratedIrradianceTexture, "Irradiance" );
-			DistanceTexture = SaveTexture( updater.GeneratedDistanceTexture, "Distance" );
+			DistanceTexture = SaveTexture( updater.GeneratedDistanceTexture, "Distance", uncompressed: true );
 			RelocationTexture = SaveTexture( GeneratedRelocationTexture, "Relocation", uncompressed: true );
 		}
 
@@ -422,7 +414,7 @@ public sealed partial class IndirectLightVolume : Component, Component.ExecuteIn
 
 		var components = Application.Editor.Scene.GetAll<IndirectLightVolume>().ToArray();
 
-		await Application.Editor.ForEachAsync( components, "Baking Light Volume Volumes", ( x, ct ) => x.BakeProbes( ct ) );
+		await Application.Editor.ForEachAsync( components, "Baking Indirect Light Volumes in Scene", ( x, ct ) => x.BakeProbes( ct ) );
 	}
 }
 

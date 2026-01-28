@@ -233,7 +233,6 @@ class DDGIProbeUpdaterCubemapper : IDisposable
 
 		attrs.Set( "ProbeIndex", probeIndex );
 		attrs.Set( "ProbeCounts", _volume.ProbeCounts );
-		attrs.Set( "DepthSharpness", _volume.DepthSharpness );
 		attrs.Set( "EnergyLoss", _volume.Contrast );
 
 		// Irradiance pass (6x6 interior + 2 border = 8x8 tile)
