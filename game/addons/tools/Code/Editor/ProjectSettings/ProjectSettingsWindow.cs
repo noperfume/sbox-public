@@ -184,20 +184,24 @@ internal sealed class ProjectSettingsWindow : Window
 			AddCategoryToList( typeof( ReferencesCategory ), "Other" );
 			AddCategoryToList( typeof( CursorCategory ), "Other" );
 		}
-
-		if ( project.Config.Type == "map" )
+		else if ( project.Config.Type == "map" )
 		{
 			AddCategoryToList( typeof( ReferencesCategory ), "Project" );
 		}
-
-		if ( project.Config.Type == "library" )
+		else if ( project.Config.Type == "library" )
 		{
 			AddCategoryToList( typeof( CompilerCategory ), "Compiler" );
 		}
-
-		if ( project.Config.Type == "tool" )
+		else if ( project.Config.Type == "tool" )
 		{
 			AddCategoryToList( typeof( CompilerCategory ), "Compiler" );
+		}
+		else
+		{
+			//
+			// Always have a project category for other project types
+			//
+			AddCategoryToList( typeof( ProjectPage ), "Project" );
 		}
 
 		// Build the tree based on category counts
