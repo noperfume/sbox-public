@@ -145,10 +145,9 @@ internal partial class NetworkSystem
 		Log.Info( $"{msg.DisplayName} [{msg.SteamId}] is connecting" );
 
 		//
-		// If the lobby is set to FriendsOnly,
-		// only allow players who are Steam friends with the host.
+		// If the lobby is set to FriendsOnly, only allow players who are Steam friends with the host.
 		//
-		if ( Config.Privacy == LobbyPrivacy.FriendsOnly && msg.SteamId != 0 )
+		if ( !Application.IsDedicatedServer && Config.Privacy == LobbyPrivacy.FriendsOnly )
 		{
 			var hostSteamId = Utility.Steam.SteamId;
 
