@@ -16,7 +16,6 @@ internal static partial class DebugOverlay
 		// 2ms in TimeSpan ticks (100ns each)
 		static readonly long StutterThresholdTicks = TimeSpan.FromMilliseconds( 2 ).Ticks;
 
-		static double _elapsedSeconds = 0;
 		static long _frameCount = 0;
 		static long _pauseTicksSum = 0;
 		static long _stutterCount = 0;
@@ -27,11 +26,7 @@ internal static partial class DebugOverlay
 		static long _gen2Sum = 0;
 		static long _allocBytesSum = 0;
 
-		// accumulator for the current in-flight second
-		static long _curFrames = 0;
-		static long _curPauseTicks = 0;
-		static long _curPauseTicksMin = long.MaxValue;
-		static long _curPauseTicksMax = 0;
+
 
 		internal static void Disabled()
 		{
@@ -39,9 +34,9 @@ internal static partial class DebugOverlay
 			_scope = null;
 			_openTime = -1;
 			_lastFlushTime = -1;
-			_elapsedSeconds = 0;
 			_frameCount = 0;
 			_pauseTicksSum = 0;
+			_stutterCount = 0;
 			_pauseTicksMin = long.MaxValue;
 			_pauseTicksMax = 0;
 			_gen0Sum = 0;
@@ -50,10 +45,6 @@ internal static partial class DebugOverlay
 			_allocBytesSum = 0;
 			_accumByType.Clear();
 			_topAllocs.Clear();
-			_curFrames = 0;
-			_curPauseTicks = 0;
-			_curPauseTicksMin = long.MaxValue;
-			_curPauseTicksMax = 0;
 		}
 
 		internal static void Draw( ref Vector2 pos )
@@ -93,29 +84,20 @@ internal static partial class DebugOverlay
 
 				_scope.Clear();
 
-				_elapsedSeconds = now - _openTime;
-				_frameCount += _curFrames;
-				_pauseTicksSum += _curPauseTicks;
-				_stutterCount = _scope.SlowCollectionCount;
-				if ( _curPauseTicksMin < _pauseTicksMin ) _pauseTicksMin = _curPauseTicksMin;
-				if ( _curPauseTicksMax > _pauseTicksMax ) _pauseTicksMax = _curPauseTicksMax;
 				_gen0Sum += ls.Gc0;
 				_gen1Sum += ls.Gc1;
 				_gen2Sum += ls.Gc2;
-
-				_curFrames = 0;
-				_curPauseTicks = 0;
-				_curPauseTicksMin = long.MaxValue;
-				_curPauseTicksMax = 0;
 			}
 
 			var gcPause = Sandbox.Diagnostics.PerformanceStats.GcPause;
-			_curFrames++;
-			_curPauseTicks += gcPause;
-			if ( gcPause < _curPauseTicksMin ) _curPauseTicksMin = gcPause;
-			if ( gcPause > _curPauseTicksMax ) _curPauseTicksMax = gcPause;
+			_frameCount++;
+			_pauseTicksSum += gcPause;
+			if ( gcPause < _pauseTicksMin ) _pauseTicksMin = gcPause;
+			if ( gcPause > _pauseTicksMax ) _pauseTicksMax = gcPause;
+			if ( gcPause >= StutterThresholdTicks ) _stutterCount++;
 
-			if ( _elapsedSeconds < 1.0 )
+			var liveElapsed = now - _openTime;
+			if ( liveElapsed < 1.0 )
 				return;
 
 			var x = pos.x;
@@ -130,27 +112,29 @@ internal static partial class DebugOverlay
 				var sumMs = TimeSpan.FromTicks( _pauseTicksSum ).TotalMilliseconds;
 				var avgMs = _frameCount > 0 ? TimeSpan.FromTicks( _pauseTicksSum / _frameCount ).TotalMilliseconds : 0.0;
 
-				var mbPerSec = _elapsedSeconds > 0 ? _allocBytesSum / (1024.0 * 1024.0 * _elapsedSeconds) : 0.0;
+				var gcMemInfo = GC.GetGCMemoryInfo();
+				var mbPerSec = liveElapsed > 0 ? _allocBytesSum / (1024.0 * 1024.0 * liveElapsed) : 0.0;
 				var mbTotal = _allocBytesSum / (1024.0 * 1024.0);
-				var elapsedSecondsInt = (int)_elapsedSeconds;
+				var elapsedSecondsInt = (int)liveElapsed;
 				var windowLabel = elapsedSecondsInt >= 60 ? $"{elapsedSecondsInt / 60}m {elapsedSecondsInt % 60}s" : $"{elapsedSecondsInt}s";
-				const string Pad = "{0,-13}";
-				scope.Text = $"GC Pauses (open for {windowLabel})\n" +
-					string.Format( Pad, "Gen (0/1/2):" ) + $"{_gen0Sum} / {_gen1Sum} / {_gen2Sum}\n" +
+				const string Pad = "{0,-32}";
+				scope.Text = $"GC Pauses (tracked for {windowLabel})\n" +
+					string.Format( Pad, "Gen (0/1/2):" ) + $"{_gen0Sum + ls.Gc0} / {_gen1Sum + ls.Gc1} / {_gen2Sum + ls.Gc2}\n" +
 					string.Format( Pad, "Total:" ) + $"{mbTotal:N1} MB\n" +
 					string.Format( Pad, "Rate:" ) + $"{mbPerSec:N2} MB/s\n" +
 					string.Format( Pad, "Avg:" ) + $"{avgMs:N2}ms\n" +
 					string.Format( Pad, "Min:" ) + $"{lowestPauseMs:N2}ms\n" +
 					string.Format( Pad, "Max:" ) + $"{highestPauseMs:N2}ms\n" +
 					string.Format( Pad, "Sum:" ) + $"{sumMs:N2}ms\n" +
-					string.Format( Pad, "Time in GC:" ) + $"{sumMs / (_elapsedSeconds * 1000.0) * 100.0:N2}%\n" +
-					string.Format( Pad, $"Stutter >{StutterThresholdTicks / TimeSpan.TicksPerMillisecond}ms:" ) + $"{_stutterCount}";
+					string.Format( Pad, $"Frames with >{StutterThresholdTicks / TimeSpan.TicksPerMillisecond}ms GC:" ) + $"{_stutterCount} frames\n" +
+					string.Format( Pad, "GC%:" ) + $"{sumMs / (liveElapsed * 1000.0) * 100.0:N2}%\n" +
+					string.Format( Pad, "GC% since process start:" ) + $"{gcMemInfo.PauseTimePercentage:N2}%\n";
 				Hud.DrawText( scope, new Rect( x, y, 512, 13 ), TextFlag.LeftTop );
 
-				y += 140;
+				y += 154;
 			}
 
-			y += 14;
+			y += 16;
 
 			scope.TextColor = new Color( 1f, 1f, 0.5f );
 			scope.Text = $"Top {_topAllocs.Count} Allocations";
