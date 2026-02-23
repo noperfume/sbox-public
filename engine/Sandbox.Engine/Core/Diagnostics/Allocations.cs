@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.Tracing;
+﻿using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Threading;
 
 namespace Sandbox.Diagnostics;
@@ -24,17 +25,24 @@ public static class Allocations
 	public class Scope
 	{
 		Dictionary<string, Entry> _entries;
+		long _slowCountAtStart;
 
 		public Scope()
 		{
 
 		}
 
+		/// <summary>
+		/// Number of GC stop-the-world pauses exceeding 2ms since this scope was last started.
+		/// </summary>
+		public long SlowCollectionCount => GCEventListener.SlowCollectionCount - _slowCountAtStart;
+
 		public void Start()
 		{
 			lock ( _lock )
 			{
 				Flip();
+				_slowCountAtStart = GCEventListener.SlowCollectionCount;
 				scopes.Add( this );
 				UpdateEnableState();
 			}
@@ -140,6 +148,12 @@ class GCEventListener : EventListener
 	Dictionary<string, Stats> _reader = new( 1024 );
 
 	private const int GC_KEYWORD = 0x0000001;
+	private const double StutterThresholdMs = 2.0;
+
+	private static long _slowCollectionCount;
+	internal static long SlowCollectionCount => Interlocked.Read( ref _slowCollectionCount );
+
+	long _suspendStarted;
 
 	internal Dictionary<string, Stats> Flip()
 	{
@@ -163,6 +177,15 @@ class GCEventListener : EventListener
 
 		switch ( eventData.EventName )
 		{
+			case "GCSuspendEEBegin_V1":
+				_suspendStarted = Stopwatch.GetTimestamp();
+				break;
+			case "GCRestartEEEnd_V1":
+				var durationMs = (Stopwatch.GetTimestamp() - _suspendStarted) * 1000.0 / Stopwatch.Frequency;
+				_suspendStarted = 0;
+				if ( durationMs >= StutterThresholdMs )
+					Interlocked.Increment( ref _slowCollectionCount );
+				break;
 			case "GCHeapStats_V1":
 				ProcessHeapStats( eventData );
 				break;
