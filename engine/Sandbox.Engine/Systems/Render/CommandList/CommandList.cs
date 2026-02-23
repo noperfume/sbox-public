@@ -7,7 +7,19 @@ public sealed unsafe partial class CommandList
 {
 	readonly Lock _lock = new Lock();
 
-	public string DebugName { get; set; }
+	private string _debugName;
+	private string _markerName = "CommandList";
+
+	public string DebugName
+	{
+		get => _debugName;
+		set
+		{
+			_debugName = value;
+			_markerName = string.IsNullOrEmpty( value ) ? "CommandList" : string.Concat( "CommandList: ", value );
+		}
+	}
+
 	public bool Enabled { get; set; }
 	public Flag Flags { get; set; }
 
@@ -417,11 +429,10 @@ public sealed unsafe partial class CommandList
 			state = ObjectPool<State>.Get();
 
 			// Begin a debug marker scope so PIX/RenderDoc show this list
-			var markerName = string.IsNullOrEmpty( DebugName ) ? "CommandList" : $"CommandList: {DebugName}";
-			Graphics.Context.BeginPixEvent( markerName );
+			Graphics.Context.BeginPixEvent( _markerName );
 
 			// GPU Profiler timestamp
-			NativeEngine.CSceneSystem.SetManagedPerfMarker( Graphics.Context, DebugName ?? "CommandList" );
+			NativeEngine.CSceneSystem.SetManagedPerfMarker( Graphics.Context, _debugName ?? "CommandList" );
 
 			// Execute all commands
 			try
