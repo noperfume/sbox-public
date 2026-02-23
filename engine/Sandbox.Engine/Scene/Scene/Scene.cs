@@ -201,7 +201,7 @@ public partial class Scene : GameObject
 			obj.OnHotload();
 		}
 
-		foreach ( var obj in systems )
+		foreach ( var obj in systems.Values )
 		{
 			obj.OnHotload();
 		}
