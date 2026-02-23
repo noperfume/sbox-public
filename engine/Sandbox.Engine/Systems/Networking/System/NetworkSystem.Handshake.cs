@@ -76,6 +76,14 @@ internal partial class NetworkSystem
 			if ( !Application.IsStandalone )
 			{
 				LaunchArguments.Map = msg.MapPackage;
+
+				// Fetch the package info so we can show the game's custom loading screen media
+				var packageInfo = await Package.FetchAsync( msg.GamePackage, false );
+				if ( packageInfo is not null )
+				{
+					LoadingScreen.Media = packageInfo.LoadingScreen.MediaUrl;
+				}
+
 				await IGameInstanceDll.Current.LoadGamePackageAsync( msg.GamePackage, flags, default );
 			}
 		}
