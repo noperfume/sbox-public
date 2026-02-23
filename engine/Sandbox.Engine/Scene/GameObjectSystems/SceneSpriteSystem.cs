@@ -75,6 +75,8 @@ public sealed class SceneSpriteSystem : GameObjectSystem<SceneSpriteSystem>
 
 		foreach ( var particleSystem in spriteRenderers )
 		{
+			particleSystem.RenderTexture?.MarkUsed( ushort.MaxValue );
+
 			var particleRenderer = (ParticleRenderer)particleSystem;
 			int particleCount = particleRenderer.ParticleEffect.Particles.Count;
 			systemOffsets[systemIndex] = new( particleSystem, currentOffset, particleCount );
@@ -165,6 +167,8 @@ public sealed class SceneSpriteSystem : GameObjectSystem<SceneSpriteSystem>
 		{
 			if ( sprite.Enabled && sprite.GameObject.Active )
 			{
+				sprite.Texture?.MarkUsed( ushort.MaxValue );
+
 				// This is used to clean up inactive sprites
 				currentEnabledSprites.Add( sprite.Id );
 
