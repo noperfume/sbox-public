@@ -29,6 +29,7 @@ public sealed class SceneSpriteSystem : GameObjectSystem<SceneSpriteSystem>
 	private readonly ConcurrentBag<(Guid id, RenderGroupKey group, int offset, int count, int splotCount)> _particleProcessingResults = new();
 	private HashSet<Guid> _registeredSpriteRenderers = new();
 	private SpriteBatchSceneObject.SpriteData[] _sharedSprites;
+	private readonly List<SpriteRenderer> _allSprites = new();
 
 	internal unsafe void UpdateParticleSprites()
 	{
@@ -156,10 +157,11 @@ public sealed class SceneSpriteSystem : GameObjectSystem<SceneSpriteSystem>
 		if ( Application.IsHeadless )
 			return;
 
-		var allSprites = Scene.GetAllComponents<SpriteRenderer>();
-		var currentEnabledSprites = new HashSet<Guid>( allSprites.Count() );
+		_allSprites.Clear();
+		Scene.GetAll<SpriteRenderer>( _allSprites );
+		var currentEnabledSprites = new HashSet<Guid>( _allSprites.Count );
 
-		foreach ( var sprite in allSprites )
+		foreach ( var sprite in _allSprites )
 		{
 			if ( sprite.Enabled && sprite.GameObject.Active )
 			{
@@ -179,7 +181,7 @@ public sealed class SceneSpriteSystem : GameObjectSystem<SceneSpriteSystem>
 		}
 
 		// Animate all sprites in parallel
-		Parallel.ForEach( allSprites, sprite =>
+		Parallel.ForEach( _allSprites, sprite =>
 		{
 			lock ( sprite )
 			{
