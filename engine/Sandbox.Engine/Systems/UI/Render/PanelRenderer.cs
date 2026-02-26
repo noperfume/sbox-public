@@ -139,7 +139,6 @@ internal unsafe sealed partial class PanelRenderer
 		//
 		// Execute the pre-built command list
 		//
-		g_pRenderDevice.Flush();
 		panel.CommandList.ExecuteOnRenderThread();
 
 		// Draw children
@@ -153,7 +152,6 @@ internal unsafe sealed partial class PanelRenderer
 		{
 			// Restore the default render target before executing layer commands.
 			Graphics.RenderTarget = DefaultRenderTarget;
-			g_pRenderDevice.Flush();
 			panel.LayerCommandList.ExecuteOnRenderThread();
 		}
 
